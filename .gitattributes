@@ -1,0 +1,49 @@
+# 既定: テキストは自動判定し、リポジトリ内は LF に正規化する。
+# (Windows では取得時に CRLF へ展開される)
+* text=auto
+
+# --- C++ ソース / シェーダー -------------------------------------------------
+*.c     text
+*.cc    text
+*.cpp   text
+*.cxx   text
+*.h     text
+*.hh    text
+*.hpp   text
+*.inl   text
+*.hlsl  text
+*.hlsli text
+
+# --- ドキュメント / 設定 -----------------------------------------------------
+*.md    text
+*.txt   text
+*.json  text
+*.xml   text
+
+# --- Visual Studio プロジェクト系: VSが CRLF を前提にするため固定 -----------
+*.sln      text eol=crlf
+*.slnx     text eol=crlf
+*.vcxproj  text eol=crlf
+*.filters  text eol=crlf
+*.props    text eol=crlf
+*.targets  text eol=crlf
+
+# --- バイナリ(差分・改行変換をしない) ---------------------------------------
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.dds  binary
+*.hdr  binary
+*.tga  binary
+*.fbx  binary
+*.glb  binary
+*.gltf binary
+*.obj  binary
+*.bin  binary
+*.lib  binary
+*.dll  binary
+*.exe  binary
+*.pdb  binary
+*.cso  binary
+*.ico  binary
