@@ -1,10 +1,11 @@
 #pragma once
 
 // Lumina Engine - Core
-// Phase 0 の最小ログ。後で本実装（レベル/出力先/フォーマット）に差し替える。
-
+// レベル付きの最小ログ。Phase 0 では printf ベース。
+// 後でファイル出力やフォーマット強化に差し替えられるよう、呼び出し側はこのIFだけ使う。
 namespace Lumina
 {
-    // フォーマット付きでログを1行出力する。
     void LogInfo(const char* fmt, ...);
+    void LogWarn(const char* fmt, ...);
+    void LogError(const char* fmt, ...);
 }
