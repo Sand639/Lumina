@@ -130,6 +130,9 @@
     <ClInclude Include="Platform\Application.h" />
     <ClInclude Include="RHI\D3D12\D3D12Common.h" />
     <ClInclude Include="RHI\D3D12\D3D12Device.h" />
+    <ClInclude Include="RHI\D3D12\D3D12CommandQueue.h" />
+    <ClInclude Include="RHI\D3D12\D3D12SwapChain.h" />
+    <ClInclude Include="RHI\D3D12\D3D12Renderer.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Core\Log.cpp" />
@@ -138,6 +141,9 @@
     <ClCompile Include="Platform\FrameTimer.cpp" />
     <ClCompile Include="Platform\Application.cpp" />
     <ClCompile Include="RHI\D3D12\D3D12Device.cpp" />
+    <ClCompile Include="RHI\D3D12\D3D12CommandQueue.cpp" />
+    <ClCompile Include="RHI\D3D12\D3D12SwapChain.cpp" />
+    <ClCompile Include="RHI\D3D12\D3D12Renderer.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

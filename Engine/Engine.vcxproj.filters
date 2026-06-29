@@ -45,6 +45,15 @@
     <ClInclude Include="RHI\D3D12\D3D12Device.h">
       <Filter>RHI\D3D12</Filter>
     </ClInclude>
+    <ClInclude Include="RHI\D3D12\D3D12CommandQueue.h">
+      <Filter>RHI\D3D12</Filter>
+    </ClInclude>
+    <ClInclude Include="RHI\D3D12\D3D12SwapChain.h">
+      <Filter>RHI\D3D12</Filter>
+    </ClInclude>
+    <ClInclude Include="RHI\D3D12\D3D12Renderer.h">
+      <Filter>RHI\D3D12</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Core\Log.cpp">
@@ -63,6 +72,15 @@
       <Filter>Platform</Filter>
     </ClCompile>
     <ClCompile Include="RHI\D3D12\D3D12Device.cpp">
+      <Filter>RHI\D3D12</Filter>
+    </ClCompile>
+    <ClCompile Include="RHI\D3D12\D3D12CommandQueue.cpp">
+      <Filter>RHI\D3D12</Filter>
+    </ClCompile>
+    <ClCompile Include="RHI\D3D12\D3D12SwapChain.cpp">
+      <Filter>RHI\D3D12</Filter>
+    </ClCompile>
+    <ClCompile Include="RHI\D3D12\D3D12Renderer.cpp">
       <Filter>RHI\D3D12</Filter>
     </ClCompile>
   </ItemGroup>
