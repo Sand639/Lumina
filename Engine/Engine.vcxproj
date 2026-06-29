@@ -133,6 +133,8 @@
     <ClInclude Include="RHI\D3D12\D3D12CommandQueue.h" />
     <ClInclude Include="RHI\D3D12\D3D12SwapChain.h" />
     <ClInclude Include="RHI\D3D12\D3D12Renderer.h" />
+    <ClInclude Include="RHI\D3D12\GpuBuffer.h" />
+    <ClInclude Include="RHI\D3D12\UploadContext.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Core\Log.cpp" />
@@ -144,6 +146,8 @@
     <ClCompile Include="RHI\D3D12\D3D12CommandQueue.cpp" />
     <ClCompile Include="RHI\D3D12\D3D12SwapChain.cpp" />
     <ClCompile Include="RHI\D3D12\D3D12Renderer.cpp" />
+    <ClCompile Include="RHI\D3D12\GpuBuffer.cpp" />
+    <ClCompile Include="RHI\D3D12\UploadContext.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

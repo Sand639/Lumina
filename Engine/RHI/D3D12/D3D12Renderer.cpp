@@ -43,6 +43,38 @@ namespace Lumina
         // 生成直後は記録中(open)なので一旦閉じる。Render の先頭で Reset する。
         m_commandList->Close();
 
+        // 三角形の頂点を DEFAULT バッファへアップロードする。
+        if (!m_upload.Initialize(device, &m_queue))
+        {
+            return false;
+        }
+
+        const Vertex triangle[] = {
+            { {  0.0f,  0.5f, 0.0f }, { 1.0f, 0.0f, 0.0f, 1.0f } },  // 上: 赤
+            { {  0.5f, -0.5f, 0.0f }, { 0.0f, 1.0f, 0.0f, 1.0f } },  // 右下: 緑
+            { { -0.5f, -0.5f, 0.0f }, { 0.0f, 0.0f, 1.0f, 1.0f } },  // 左下: 青
+        };
+        const u64 vbSize = sizeof(triangle);
+
+        if (!m_vertexBuffer.Create(device, vbSize, D3D12_HEAP_TYPE_DEFAULT,
+                                   D3D12_RESOURCE_STATE_COPY_DEST, L"TriangleVB"))
+        {
+            return false;
+        }
+        if (!m_upload.UploadBuffer(m_vertexBuffer, triangle, vbSize,
+                                   D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER))
+        {
+            return false;
+        }
+
+        m_vbView.BufferLocation = m_vertexBuffer.GpuAddress();
+        m_vbView.SizeInBytes    = static_cast<UINT>(vbSize);
+        m_vbView.StrideInBytes  = sizeof(Vertex);
+        m_vertexCount           = 3;
+
+        LogInfo("D3D12Renderer: triangle vertex buffer uploaded (%llu bytes)",
+                static_cast<unsigned long long>(vbSize));
+
         LogInfo("D3D12Renderer: initialized");
         return true;
     }
@@ -99,6 +131,9 @@ namespace Lumina
         {
             m_queue.Flush();
         }
+
+        m_vertexBuffer.Reset();
+        m_upload.Shutdown();
 
         m_commandList.Reset();
         for (auto& allocator : m_allocators)

@@ -54,6 +54,12 @@
     <ClInclude Include="RHI\D3D12\D3D12Renderer.h">
       <Filter>RHI\D3D12</Filter>
     </ClInclude>
+    <ClInclude Include="RHI\D3D12\GpuBuffer.h">
+      <Filter>RHI\D3D12</Filter>
+    </ClInclude>
+    <ClInclude Include="RHI\D3D12\UploadContext.h">
+      <Filter>RHI\D3D12</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Core\Log.cpp">
@@ -81,6 +87,12 @@
       <Filter>RHI\D3D12</Filter>
     </ClCompile>
     <ClCompile Include="RHI\D3D12\D3D12Renderer.cpp">
+      <Filter>RHI\D3D12</Filter>
+    </ClCompile>
+    <ClCompile Include="RHI\D3D12\GpuBuffer.cpp">
+      <Filter>RHI\D3D12</Filter>
+    </ClCompile>
+    <ClCompile Include="RHI\D3D12\UploadContext.cpp">
       <Filter>RHI\D3D12</Filter>
     </ClCompile>
   </ItemGroup>
