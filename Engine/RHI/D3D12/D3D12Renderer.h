@@ -41,7 +41,10 @@ namespace Lumina
         static constexpr u32 kFrameCount = D3D12SwapChain::kBackBufferCount;
 
         bool CreateTriangleResources(ID3D12Device* device);  // 頂点バッファのアップロード
-        bool CreatePipeline(ID3D12Device* device);           // ルートシグネチャ + PSO
+        bool CreatePipeline(ID3D12Device* device);           // ルートシグネチャ + 初回PSO
+        bool BuildPipelineState(ID3D12Device* device,        // シェーダー再コンパイル→PSO生成
+                                ComPtr<ID3D12PipelineState>& outPso);
+        void ReloadShaderIfChanged(ID3D12Device* device);    // ファイル監視→ホットリロード
 
         D3D12Device       m_device;
         D3D12CommandQueue m_queue;
@@ -67,5 +70,9 @@ namespace Lumina
         std::wstring                m_shaderPath;
         ComPtr<ID3D12RootSignature> m_rootSignature;
         ComPtr<ID3D12PipelineState> m_pipelineState;
+
+        // ホットリロード用: 監視対象の最終更新時刻 + ポーリング間引き。
+        u64 m_shaderWriteTime    = 0;
+        u32 m_reloadCheckCounter = 0;
     };
 }

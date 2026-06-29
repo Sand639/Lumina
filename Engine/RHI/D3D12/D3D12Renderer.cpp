@@ -3,6 +3,22 @@
 
 namespace Lumina
 {
+    namespace
+    {
+        // ファイルの最終更新時刻を u64 で返す(取得失敗時は 0)。ホットリロード監視用。
+        u64 GetFileWriteTime(const std::wstring& path)
+        {
+            WIN32_FILE_ATTRIBUTE_DATA attr{};
+            if (!GetFileAttributesExW(path.c_str(), GetFileExInfoStandard, &attr))
+            {
+                return 0;
+            }
+            ULARGE_INTEGER t{};
+            t.LowPart  = attr.ftLastWriteTime.dwLowDateTime;
+            t.HighPart = attr.ftLastWriteTime.dwHighDateTime;
+            return t.QuadPart;
+        }
+    }
 
     D3D12Renderer::~D3D12Renderer()
     {
@@ -129,25 +145,38 @@ namespace Lumina
                                         IID_PPV_ARGS(&m_rootSignature)),
             "CreateRootSignature failed");
 
+        // 初回のPSOを構築。
+        if (!BuildPipelineState(device, m_pipelineState))
+        {
+            return false;
+        }
+        m_shaderWriteTime = GetFileWriteTime(m_shaderPath);
+
+        LogInfo("D3D12Renderer: pipeline created");
+        return true;
+    }
+
+    bool D3D12Renderer::BuildPipelineState(ID3D12Device* device,
+                                           ComPtr<ID3D12PipelineState>& outPso)
+    {
         // --- シェーダーコンパイル(DXC, SM6) ---
         CompiledShader vs;
         CompiledShader ps;
         if (!m_shaderCompiler.Compile(m_shaderPath, L"VSMain", L"vs_6_0", vs)) return false;
         if (!m_shaderCompiler.Compile(m_shaderPath, L"PSMain", L"ps_6_0", ps)) return false;
 
-        // --- 入力レイアウトは VS のリフレクションから自動取得 ---
+        // 入力レイアウトは VS のリフレクションから自動取得。
 
-        // --- ラスタライザ(カリング無し: 裏表を気にしない) ---
+        // ラスタライザ(カリング無し)。
         D3D12_RASTERIZER_DESC raster{};
         raster.FillMode        = D3D12_FILL_MODE_SOLID;
         raster.CullMode        = D3D12_CULL_MODE_NONE;
         raster.DepthClipEnable = TRUE;
 
-        // --- ブレンド(不透明) ---
+        // ブレンド(不透明)。
         D3D12_BLEND_DESC blend{};
         blend.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
 
-        // --- PSO ---
         D3D12_GRAPHICS_PIPELINE_STATE_DESC pso{};
         pso.pRootSignature        = m_rootSignature.Get();
         pso.VS                    = vs.ByteCode();
@@ -165,15 +194,48 @@ namespace Lumina
         pso.SampleDesc.Count      = 1;
 
         LUMINA_CHECK_HR(
-            device->CreateGraphicsPipelineState(&pso, IID_PPV_ARGS(&m_pipelineState)),
+            device->CreateGraphicsPipelineState(&pso, IID_PPV_ARGS(&outPso)),
             "CreateGraphicsPipelineState failed");
-
-        LogInfo("D3D12Renderer: pipeline created");
         return true;
+    }
+
+    void D3D12Renderer::ReloadShaderIfChanged(ID3D12Device* device)
+    {
+        // 毎フレームは見ず、約0.5秒(30フレーム)ごとに更新時刻をチェックする。
+        if (++m_reloadCheckCounter < 30)
+        {
+            return;
+        }
+        m_reloadCheckCounter = 0;
+
+        const u64 writeTime = GetFileWriteTime(m_shaderPath);
+        if (writeTime == 0 || writeTime == m_shaderWriteTime)
+        {
+            return;  // 取得失敗 or 変更なし
+        }
+        m_shaderWriteTime = writeTime;
+
+        LogInfo("HotReload: shader changed, rebuilding pipeline...");
+
+        ComPtr<ID3D12PipelineState> newPso;
+        if (BuildPipelineState(device, newPso))
+        {
+            m_queue.Flush();             // 旧PSOがGPUで使用中でないことを保証
+            m_pipelineState = newPso;    // 成功時のみ差し替え
+            LogInfo("HotReload: pipeline rebuilt");
+        }
+        else
+        {
+            // コンパイルエラー時は直前の正常なPSOを保持して描画継続。
+            LogWarn("HotReload: compile failed, keeping previous pipeline");
+        }
     }
 
     void D3D12Renderer::Render(const f32 clearColor[4])
     {
+        // シェーダーが更新されていればPSOを作り直す(ホットリロード)。
+        ReloadShaderIfChanged(m_device.Device());
+
         const u32 frameIndex = m_swapChain.CurrentIndex();
 
         // このバックバッファに以前投げた作業の完了を待つ(上書き事故を防ぐ同期)。
