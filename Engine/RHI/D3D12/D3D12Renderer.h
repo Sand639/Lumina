@@ -5,7 +5,10 @@
 #include "RHI/D3D12/D3D12SwapChain.h"
 #include "RHI/D3D12/GpuBuffer.h"
 #include "RHI/D3D12/UploadContext.h"
+#include "RHI/D3D12/ShaderCompiler.h"
 #include "Core/Math.h"
+
+#include <string>
 
 // Lumina Engine - RHI / D3D12 backend
 // デバイス/キュー/スワップチェーンを束ね、1フレームの描画を回す最上位オブジェクト。
@@ -60,6 +63,8 @@ namespace Lumina
         u32                      m_vertexCount = 0;
 
         // パイプライン(ルートシグネチャ + PSO)。
+        ShaderCompiler              m_shaderCompiler;
+        std::wstring                m_shaderPath;
         ComPtr<ID3D12RootSignature> m_rootSignature;
         ComPtr<ID3D12PipelineState> m_pipelineState;
     };

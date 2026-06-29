@@ -125,6 +125,7 @@
     <ClInclude Include="Core\Assert.h" />
     <ClInclude Include="Core\Math.h" />
     <ClInclude Include="Core\FileIO.h" />
+    <ClInclude Include="Core\Paths.h" />
     <ClInclude Include="Platform\Window.h" />
     <ClInclude Include="Platform\FrameTimer.h" />
     <ClInclude Include="Platform\Application.h" />
@@ -135,10 +136,12 @@
     <ClInclude Include="RHI\D3D12\D3D12Renderer.h" />
     <ClInclude Include="RHI\D3D12\GpuBuffer.h" />
     <ClInclude Include="RHI\D3D12\UploadContext.h" />
+    <ClInclude Include="RHI\D3D12\ShaderCompiler.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Core\Log.cpp" />
     <ClCompile Include="Core\FileIO.cpp" />
+    <ClCompile Include="Core\Paths.cpp" />
     <ClCompile Include="Platform\Window.cpp" />
     <ClCompile Include="Platform\FrameTimer.cpp" />
     <ClCompile Include="Platform\Application.cpp" />
@@ -148,6 +151,7 @@
     <ClCompile Include="RHI\D3D12\D3D12Renderer.cpp" />
     <ClCompile Include="RHI\D3D12\GpuBuffer.cpp" />
     <ClCompile Include="RHI\D3D12\UploadContext.cpp" />
+    <ClCompile Include="RHI\D3D12\ShaderCompiler.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

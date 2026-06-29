@@ -75,6 +75,11 @@
       <AdditionalIncludeDirectories>$(SolutionDir)Engine;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
+    <PostBuildEvent>
+      <Command>xcopy /Y /D "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxcompiler.dll" "$(OutDir)" &gt;nul
+xcopy /Y /D "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(OutDir)" &gt;nul</Command>
+      <Message>Copying DXC runtime (dxcompiler.dll, dxil.dll)</Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -146,6 +151,9 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\Assets\Shaders\Triangle.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Engine\Engine.vcxproj">

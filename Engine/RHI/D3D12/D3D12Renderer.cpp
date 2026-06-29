@@ -1,56 +1,8 @@
 #include "RHI/D3D12/D3D12Renderer.h"
-
-#include <d3dcompiler.h>
-#include <cstring>
-
-#pragma comment(lib, "d3dcompiler.lib")
+#include "Core/Paths.h"
 
 namespace Lumina
 {
-    namespace
-    {
-        // Phase 2 用の最小シェーダー(頂点カラーをそのまま出力)。
-        // Phase 3 で DXC + ファイル + ホットリロードに置き換える。
-        constexpr const char* kTriangleHlsl = R"(
-struct VSInput { float3 pos : POSITION; float4 color : COLOR; };
-struct PSInput { float4 pos : SV_POSITION; float4 color : COLOR; };
-
-PSInput VSMain(VSInput input)
-{
-    PSInput o;
-    o.pos   = float4(input.pos, 1.0);
-    o.color = input.color;
-    return o;
-}
-
-float4 PSMain(PSInput input) : SV_TARGET
-{
-    return input.color;
-}
-)";
-
-        bool CompileShader(const char* entry, const char* target, ComPtr<ID3DBlob>& out)
-        {
-            UINT flags = 0;
-#ifdef _DEBUG
-            flags |= D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
-#endif
-            ComPtr<ID3DBlob> error;
-            const HRESULT hr = D3DCompile(kTriangleHlsl, std::strlen(kTriangleHlsl),
-                                          nullptr, nullptr, nullptr,
-                                          entry, target, flags, 0, &out, &error);
-            if (hr < 0)
-            {
-                if (error)
-                {
-                    LogError("Shader compile failed (%s): %s", entry,
-                             static_cast<const char*>(error->GetBufferPointer()));
-                }
-                return false;
-            }
-            return true;
-        }
-    }
 
     D3D12Renderer::~D3D12Renderer()
     {
@@ -100,6 +52,13 @@ float4 PSMain(PSInput input) : SV_TARGET
         {
             return false;
         }
+
+        if (!m_shaderCompiler.Initialize())
+        {
+            return false;
+        }
+        m_shaderPath = GetAssetsDir() + L"Shaders\\Triangle.hlsl";
+
         if (!CreatePipeline(device))
         {
             return false;
@@ -170,19 +129,13 @@ float4 PSMain(PSInput input) : SV_TARGET
                                         IID_PPV_ARGS(&m_rootSignature)),
             "CreateRootSignature failed");
 
-        // --- シェーダーコンパイル ---
-        ComPtr<ID3DBlob> vs;
-        ComPtr<ID3DBlob> ps;
-        if (!CompileShader("VSMain", "vs_5_0", vs)) return false;
-        if (!CompileShader("PSMain", "ps_5_0", ps)) return false;
+        // --- シェーダーコンパイル(DXC, SM6) ---
+        CompiledShader vs;
+        CompiledShader ps;
+        if (!m_shaderCompiler.Compile(m_shaderPath, L"VSMain", L"vs_6_0", vs)) return false;
+        if (!m_shaderCompiler.Compile(m_shaderPath, L"PSMain", L"ps_6_0", ps)) return false;
 
-        // --- 入力レイアウト(Vertex 構造体と一致させる) ---
-        const D3D12_INPUT_ELEMENT_DESC inputLayout[] = {
-            { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT,    0, 0,
-              D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-            { "COLOR",    0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12,
-              D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-        };
+        // --- 入力レイアウトは VS のリフレクションから自動取得 ---
 
         // --- ラスタライザ(カリング無し: 裏表を気にしない) ---
         D3D12_RASTERIZER_DESC raster{};
@@ -197,9 +150,10 @@ float4 PSMain(PSInput input) : SV_TARGET
         // --- PSO ---
         D3D12_GRAPHICS_PIPELINE_STATE_DESC pso{};
         pso.pRootSignature        = m_rootSignature.Get();
-        pso.VS                    = { vs->GetBufferPointer(), vs->GetBufferSize() };
-        pso.PS                    = { ps->GetBufferPointer(), ps->GetBufferSize() };
-        pso.InputLayout           = { inputLayout, _countof(inputLayout) };
+        pso.VS                    = vs.ByteCode();
+        pso.PS                    = ps.ByteCode();
+        pso.InputLayout           = { vs.inputLayout.data(),
+                                      static_cast<UINT>(vs.inputLayout.size()) };
         pso.RasterizerState       = raster;
         pso.BlendState            = blend;
         pso.DepthStencilState.DepthEnable   = FALSE;
@@ -288,6 +242,7 @@ float4 PSMain(PSInput input) : SV_TARGET
 
         m_pipelineState.Reset();
         m_rootSignature.Reset();
+        m_shaderCompiler.Shutdown();
         m_vertexBuffer.Reset();
         m_upload.Shutdown();
 

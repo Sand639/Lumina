@@ -30,6 +30,9 @@
     <ClInclude Include="Core\FileIO.h">
       <Filter>Core</Filter>
     </ClInclude>
+    <ClInclude Include="Core\Paths.h">
+      <Filter>Core</Filter>
+    </ClInclude>
     <ClInclude Include="Platform\Window.h">
       <Filter>Platform</Filter>
     </ClInclude>
@@ -60,12 +63,18 @@
     <ClInclude Include="RHI\D3D12\UploadContext.h">
       <Filter>RHI\D3D12</Filter>
     </ClInclude>
+    <ClInclude Include="RHI\D3D12\ShaderCompiler.h">
+      <Filter>RHI\D3D12</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Core\Log.cpp">
       <Filter>Core</Filter>
     </ClCompile>
     <ClCompile Include="Core\FileIO.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Paths.cpp">
       <Filter>Core</Filter>
     </ClCompile>
     <ClCompile Include="Platform\Window.cpp">
@@ -93,6 +102,9 @@
       <Filter>RHI\D3D12</Filter>
     </ClCompile>
     <ClCompile Include="RHI\D3D12\UploadContext.cpp">
+      <Filter>RHI\D3D12</Filter>
+    </ClCompile>
+    <ClCompile Include="RHI\D3D12\ShaderCompiler.cpp">
       <Filter>RHI\D3D12</Filter>
     </ClCompile>
   </ItemGroup>
