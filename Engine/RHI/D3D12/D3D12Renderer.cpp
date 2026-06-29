@@ -1,7 +1,57 @@
 #include "RHI/D3D12/D3D12Renderer.h"
 
+#include <d3dcompiler.h>
+#include <cstring>
+
+#pragma comment(lib, "d3dcompiler.lib")
+
 namespace Lumina
 {
+    namespace
+    {
+        // Phase 2 用の最小シェーダー(頂点カラーをそのまま出力)。
+        // Phase 3 で DXC + ファイル + ホットリロードに置き換える。
+        constexpr const char* kTriangleHlsl = R"(
+struct VSInput { float3 pos : POSITION; float4 color : COLOR; };
+struct PSInput { float4 pos : SV_POSITION; float4 color : COLOR; };
+
+PSInput VSMain(VSInput input)
+{
+    PSInput o;
+    o.pos   = float4(input.pos, 1.0);
+    o.color = input.color;
+    return o;
+}
+
+float4 PSMain(PSInput input) : SV_TARGET
+{
+    return input.color;
+}
+)";
+
+        bool CompileShader(const char* entry, const char* target, ComPtr<ID3DBlob>& out)
+        {
+            UINT flags = 0;
+#ifdef _DEBUG
+            flags |= D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
+#endif
+            ComPtr<ID3DBlob> error;
+            const HRESULT hr = D3DCompile(kTriangleHlsl, std::strlen(kTriangleHlsl),
+                                          nullptr, nullptr, nullptr,
+                                          entry, target, flags, 0, &out, &error);
+            if (hr < 0)
+            {
+                if (error)
+                {
+                    LogError("Shader compile failed (%s): %s", entry,
+                             static_cast<const char*>(error->GetBufferPointer()));
+                }
+                return false;
+            }
+            return true;
+        }
+    }
+
     D3D12Renderer::~D3D12Renderer()
     {
         Shutdown();
@@ -9,6 +59,9 @@ namespace Lumina
 
     bool D3D12Renderer::Initialize(HWND hwnd, u32 width, u32 height)
     {
+        m_width  = width;
+        m_height = height;
+
         if (!m_device.Initialize())
         {
             return false;
@@ -43,7 +96,21 @@ namespace Lumina
         // 生成直後は記録中(open)なので一旦閉じる。Render の先頭で Reset する。
         m_commandList->Close();
 
-        // 三角形の頂点を DEFAULT バッファへアップロードする。
+        if (!CreateTriangleResources(device))
+        {
+            return false;
+        }
+        if (!CreatePipeline(device))
+        {
+            return false;
+        }
+
+        LogInfo("D3D12Renderer: initialized");
+        return true;
+    }
+
+    bool D3D12Renderer::CreateTriangleResources(ID3D12Device* device)
+    {
         if (!m_upload.Initialize(device, &m_queue))
         {
             return false;
@@ -74,8 +141,80 @@ namespace Lumina
 
         LogInfo("D3D12Renderer: triangle vertex buffer uploaded (%llu bytes)",
                 static_cast<unsigned long long>(vbSize));
+        return true;
+    }
 
-        LogInfo("D3D12Renderer: initialized");
+    bool D3D12Renderer::CreatePipeline(ID3D12Device* device)
+    {
+        // --- ルートシグネチャ(パラメータ無し。頂点入力のみ許可) ---
+        D3D12_ROOT_SIGNATURE_DESC rsDesc{};
+        rsDesc.NumParameters = 0;
+        rsDesc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
+
+        ComPtr<ID3DBlob> rsBlob;
+        ComPtr<ID3DBlob> rsError;
+        const HRESULT hr = D3D12SerializeRootSignature(
+            &rsDesc, D3D_ROOT_SIGNATURE_VERSION_1, &rsBlob, &rsError);
+        if (hr < 0)
+        {
+            if (rsError)
+            {
+                LogError("RootSignature serialize failed: %s",
+                         static_cast<const char*>(rsError->GetBufferPointer()));
+            }
+            return false;
+        }
+        LUMINA_CHECK_HR(
+            device->CreateRootSignature(0, rsBlob->GetBufferPointer(),
+                                        rsBlob->GetBufferSize(),
+                                        IID_PPV_ARGS(&m_rootSignature)),
+            "CreateRootSignature failed");
+
+        // --- シェーダーコンパイル ---
+        ComPtr<ID3DBlob> vs;
+        ComPtr<ID3DBlob> ps;
+        if (!CompileShader("VSMain", "vs_5_0", vs)) return false;
+        if (!CompileShader("PSMain", "ps_5_0", ps)) return false;
+
+        // --- 入力レイアウト(Vertex 構造体と一致させる) ---
+        const D3D12_INPUT_ELEMENT_DESC inputLayout[] = {
+            { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT,    0, 0,
+              D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+            { "COLOR",    0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12,
+              D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+        };
+
+        // --- ラスタライザ(カリング無し: 裏表を気にしない) ---
+        D3D12_RASTERIZER_DESC raster{};
+        raster.FillMode        = D3D12_FILL_MODE_SOLID;
+        raster.CullMode        = D3D12_CULL_MODE_NONE;
+        raster.DepthClipEnable = TRUE;
+
+        // --- ブレンド(不透明) ---
+        D3D12_BLEND_DESC blend{};
+        blend.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
+
+        // --- PSO ---
+        D3D12_GRAPHICS_PIPELINE_STATE_DESC pso{};
+        pso.pRootSignature        = m_rootSignature.Get();
+        pso.VS                    = { vs->GetBufferPointer(), vs->GetBufferSize() };
+        pso.PS                    = { ps->GetBufferPointer(), ps->GetBufferSize() };
+        pso.InputLayout           = { inputLayout, _countof(inputLayout) };
+        pso.RasterizerState       = raster;
+        pso.BlendState            = blend;
+        pso.DepthStencilState.DepthEnable   = FALSE;
+        pso.DepthStencilState.StencilEnable = FALSE;
+        pso.SampleMask            = UINT_MAX;
+        pso.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+        pso.NumRenderTargets      = 1;
+        pso.RTVFormats[0]         = DXGI_FORMAT_R8G8B8A8_UNORM;
+        pso.SampleDesc.Count      = 1;
+
+        LUMINA_CHECK_HR(
+            device->CreateGraphicsPipelineState(&pso, IID_PPV_ARGS(&m_pipelineState)),
+            "CreateGraphicsPipelineState failed");
+
+        LogInfo("D3D12Renderer: pipeline created");
         return true;
     }
 
@@ -108,6 +247,21 @@ namespace Lumina
         m_commandList->OMSetRenderTargets(1, &rtv, FALSE, nullptr);
         m_commandList->ClearRenderTargetView(rtv, clearColor, 0, nullptr);
 
+        // --- 三角形を描画 ---
+        const D3D12_VIEWPORT viewport{ 0.0f, 0.0f,
+                                       static_cast<f32>(m_width), static_cast<f32>(m_height),
+                                       0.0f, 1.0f };
+        const D3D12_RECT scissor{ 0, 0,
+                                  static_cast<LONG>(m_width), static_cast<LONG>(m_height) };
+        m_commandList->RSSetViewports(1, &viewport);
+        m_commandList->RSSetScissorRects(1, &scissor);
+
+        m_commandList->SetGraphicsRootSignature(m_rootSignature.Get());
+        m_commandList->SetPipelineState(m_pipelineState.Get());
+        m_commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+        m_commandList->IASetVertexBuffers(0, 1, &m_vbView);
+        m_commandList->DrawInstanced(m_vertexCount, 1, 0, 0);
+
         // バリア: 描画先(RENDER_TARGET) → 表示用(PRESENT)
         barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
         barrier.Transition.StateAfter  = D3D12_RESOURCE_STATE_PRESENT;
@@ -132,6 +286,8 @@ namespace Lumina
             m_queue.Flush();
         }
 
+        m_pipelineState.Reset();
+        m_rootSignature.Reset();
         m_vertexBuffer.Reset();
         m_upload.Shutdown();
 

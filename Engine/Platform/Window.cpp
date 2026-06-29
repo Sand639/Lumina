@@ -15,6 +15,10 @@ namespace Lumina
 
     bool Window::Create(const wchar_t* title, i32 width, i32 height)
     {
+        // DPI認識(Per-Monitor V2)にする。クライアント領域=物理ピクセルになり、
+        // バックバッファ解像度と画面が1:1で一致する(高DPI環境でのボケ/ズレ防止)。
+        SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
+
         const HINSTANCE hInstance = GetModuleHandleW(nullptr);
 
         WNDCLASSEXW wc{};

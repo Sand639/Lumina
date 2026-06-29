@@ -31,11 +31,14 @@ namespace Lumina
         bool Initialize(HWND hwnd, u32 width, u32 height);
         void Shutdown();
 
-        // 指定色でバックバッファをクリアして表示する(RGBA, 0..1)。
+        // 指定色でバックバッファをクリアし、三角形を描いて表示する(RGBA, 0..1)。
         void Render(const f32 clearColor[4]);
 
     private:
         static constexpr u32 kFrameCount = D3D12SwapChain::kBackBufferCount;
+
+        bool CreateTriangleResources(ID3D12Device* device);  // 頂点バッファのアップロード
+        bool CreatePipeline(ID3D12Device* device);           // ルートシグネチャ + PSO
 
         D3D12Device       m_device;
         D3D12CommandQueue m_queue;
@@ -46,10 +49,18 @@ namespace Lumina
         ComPtr<ID3D12GraphicsCommandList> m_commandList;
         u64                               m_frameFenceValues[kFrameCount] = {};
 
+        // 画面サイズ(ビューポート/シザー用)。
+        u32 m_width  = 0;
+        u32 m_height = 0;
+
         // 三角形のジオメトリ。
         UploadContext            m_upload;
         GpuBuffer                m_vertexBuffer;
         D3D12_VERTEX_BUFFER_VIEW m_vbView{};
         u32                      m_vertexCount = 0;
+
+        // パイプライン(ルートシグネチャ + PSO)。
+        ComPtr<ID3D12RootSignature> m_rootSignature;
+        ComPtr<ID3D12PipelineState> m_pipelineState;
     };
 }
