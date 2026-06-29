@@ -1,5 +1,6 @@
 #include "Core/Log.h"
 #include "Platform/Application.h"
+#include "RHI/D3D12/D3D12Device.h"
 
 // Lumina Sandbox - Engine を使う実行アプリ。
 // Application を継承し、必要なフックだけを実装する。
@@ -15,6 +16,12 @@ protected:
     bool OnInit() override
     {
         Lumina::LogInfo("SandboxApp: initialized");
+
+        // Phase 1 増分1: D3D12 デバイスを起動する(まだ描画はしない)。
+        if (!m_device.Initialize())
+        {
+            return false;
+        }
         return true;
     }
 
@@ -25,13 +32,17 @@ protected:
 
     void OnRender() override
     {
-        // Phase 1 でここに描画(クリア->Present)が入る。
+        // Phase 1 増分2 でここに「クリア→Present」が入る。
     }
 
     void OnShutdown() override
     {
+        m_device.Shutdown();
         Lumina::LogInfo("SandboxApp: shutting down");
     }
+
+private:
+    Lumina::D3D12Device m_device;
 };
 
 int main()

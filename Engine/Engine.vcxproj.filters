@@ -7,6 +7,12 @@
     <Filter Include="Platform">
       <UniqueIdentifier>{a2222222-2222-2222-2222-222222222222}</UniqueIdentifier>
     </Filter>
+    <Filter Include="RHI">
+      <UniqueIdentifier>{a3333333-3333-3333-3333-333333333333}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="RHI\D3D12">
+      <UniqueIdentifier>{a4444444-4444-4444-4444-444444444444}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Core\Types.h">
@@ -33,6 +39,12 @@
     <ClInclude Include="Platform\Application.h">
       <Filter>Platform</Filter>
     </ClInclude>
+    <ClInclude Include="RHI\D3D12\D3D12Common.h">
+      <Filter>RHI\D3D12</Filter>
+    </ClInclude>
+    <ClInclude Include="RHI\D3D12\D3D12Device.h">
+      <Filter>RHI\D3D12</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Core\Log.cpp">
@@ -49,6 +61,9 @@
     </ClCompile>
     <ClCompile Include="Platform\Application.cpp">
       <Filter>Platform</Filter>
+    </ClCompile>
+    <ClCompile Include="RHI\D3D12\D3D12Device.cpp">
+      <Filter>RHI\D3D12</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

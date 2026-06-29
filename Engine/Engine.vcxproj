@@ -128,6 +128,8 @@
     <ClInclude Include="Platform\Window.h" />
     <ClInclude Include="Platform\FrameTimer.h" />
     <ClInclude Include="Platform\Application.h" />
+    <ClInclude Include="RHI\D3D12\D3D12Common.h" />
+    <ClInclude Include="RHI\D3D12\D3D12Device.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Core\Log.cpp" />
@@ -135,6 +137,7 @@
     <ClCompile Include="Platform\Window.cpp" />
     <ClCompile Include="Platform\FrameTimer.cpp" />
     <ClCompile Include="Platform\Application.cpp" />
+    <ClCompile Include="RHI\D3D12\D3D12Device.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
